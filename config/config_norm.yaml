@@ -1,0 +1,6 @@
+# Parameters for norm_publisher node
+# Remember that there can be other important constants that can only be changed from the src code.
+
+norm_publisher:
+  INPUT_TOPIC: /qb_class_imu/acc            # Topic where acceleration is published by qb_interface
+  OUTPUT_TOPIC: /norm_publishing_topic      # Output topic of the node where finger id will be published

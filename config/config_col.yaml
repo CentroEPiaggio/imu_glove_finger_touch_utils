@@ -1,0 +1,19 @@
+# Parameters for finger_collision_identification node
+# Remember that there can be other important constants that can only be changed from the src code.
+
+finger_collision_identification:
+  INPUT_TOPIC: /qb_class_imu/acc            # Topic where acceleration is published by qb_interface
+  OUTPUT_TOPIC: /touching_finger_topic      # Output topic of the node where finger id will be published
+  SYN_TOPIC: /joint_states                  # Topic from which to get the synergy joint value
+  HAND_JOINT: right_hand_synergy_joint      # name of the synergy joint of the hand
+
+  THRESHOLD: 7.0                  # If z score is above this threshold a peak is identified (for OCADO good value 10)
+  INFLUENCE: 0.5                  # Importance to give to a previous peak in the computation of the mean
+  FINGER_TIMEOUT: 5.0             # Finger Timeout for resetting finger_id
+  REF_THRESH: 0.5                 # Minimum absolute treshold on imu acc. for identification
+  ABS_MAX_THRESH: 0.40            # Maximum absolute treshold on imu acc. for identification (good: 0.5)
+  SYN_POS_THRESH: 0.10            # Threshold on synergy after which start detection (good: 0.2)
+  SYN_VEL_WEIGHT: 0.500           # Weight on inverse of synergy velocity (inverse of the midpoint of the range (0.02, 0.5) between inverses of max and min vel)
+  SYN_VEL_SAT_MIN: 0.02           # Value under which synergy velocity is made saturate
+  SYN_VEL_SAT_MAX: 0.50           # Value over which synergy velocity is made saturate
+

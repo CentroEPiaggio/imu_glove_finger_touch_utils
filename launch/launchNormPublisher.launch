@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+
+	<!-- Launch arguments -->
+	<arg name="config_norm" default="$(find imu_glove_finger_touch_utils)/config/config_norm.yaml"/>
+
+	<!-- Loading config file to param server -->
+	<rosparam command="load" file="$(arg config_norm)"/>
+
+	<!-- Load qn_interface_imu launch -->
+	<!-- <include file="$(find qb_interface)/launch/qb_interface_imu.launch"></include> -->
+
+	<!-- Load collision identification node -->
+  	<node name="norm_publisher" pkg="imu_glove_finger_touch_utils" type="norm_publisher" output="screen"/>
+
+</launch>
