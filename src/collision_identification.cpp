@@ -29,7 +29,7 @@
 #include <math.h> 
 
 // DEFINES
-#define DEBUG       1           	// Prints additional outputs if 1
+#define DEBUG       0           	// Prints additional outputs if 1
 #define USE_SUM		true			// Use sum of imus on finger instead of chosing biggest
 
 std::string INPUT_TOPIC;
@@ -214,8 +214,10 @@ float getNormFromMeas(const qb_interface::inertialSensor meas){
 the elements in the inertialSensorArray corresponding to the indexes specified by input_imu_array */
 float writeMeasFromArray(const qb_interface::inertialSensorArray meas_array, const int input_imu_array[]){
 	if(DEBUG) std::cout << "ENTERED WRITE MEAS!!!!!!" << std::endl;
-	int num_imus = (sizeof(input_imu_array)/sizeof(*input_imu_array));
-	if(DEBUG) std::cout << "GOT INPUT_I WRITE MEAS!!!!!!" << std::endl;
+	// int num_imus = (sizeof(input_imu_array)/sizeof(input_imu_array[0]));
+	int num_imus = 1;
+	if(DEBUG) std::cout << "GOT INPUT_IMU_ARRAY!!!!!! IT IS " << input_imu_array << std::endl;
+	if(DEBUG) std::cout << "GOT INPUT_IMU_ARRAY SIZE WRITE MEAS!!!!!! SIZE IS " << num_imus << std::endl;
 	float norm_result = 0;
 	// In a loop, among the elements of meas_array identified by input_imu_array, find the biggest
 	// or the sum (As we are using only 1 IMU per finger this does not matter)
@@ -227,6 +229,7 @@ float writeMeasFromArray(const qb_interface::inertialSensorArray meas_array, con
 		}
 	} else {
 		for(int i = 0; i < num_imus; i++){
+			if(DEBUG) std::cout << "ENTERED FOR WRITE MEAS!!!!!!" << std::endl;
 			norm_result += getNormFromMeas(meas_array.m[input_imu_array[i]]); 
 		}
 	}
@@ -271,6 +274,13 @@ void getCorrectCollision(){
 		}
 	}
 
+	// Check if residuals bigger than an abs threshold
+	abs_thresh_1 = thumb_output["output_residuals"][NUM_LAG] > ABS_MAX_THRESH;
+	abs_thresh_2 = index_output["output_residuals"][NUM_LAG] > ABS_MAX_THRESH;
+	abs_thresh_3 = middle_output["output_residuals"][NUM_LAG] > ABS_MAX_THRESH;
+	abs_thresh_4 = ring_output["output_residuals"][NUM_LAG] > ABS_MAX_THRESH;
+	abs_thresh_5 = little_output["output_residuals"][NUM_LAG] > ABS_MAX_THRESH;
+
 	// Check reference imu
 	ref_thresh = (ref_meas >= REF_THRESH && ref_output["output_signals"][NUM_LAG] != 0);
 
@@ -278,15 +288,15 @@ void getCorrectCollision(){
 	syn_thresh_ok = (synergy_pos >= SYN_POS_THRESH);
 
 	// Check collision conditions
-	if(thumb_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 1 && 
+	if(thumb_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 1 && abs_thresh_1 && 
 		!ref_thresh && syn_thresh_ok) finger_id = 1;
-	else if(index_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 2 && 
+	else if(index_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 2 && abs_thresh_2 && 
 		!ref_thresh && syn_thresh_ok) finger_id = 2;
-	else if(middle_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 3 && 
+	else if(middle_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 3 && abs_thresh_3 && 
 		!ref_thresh && syn_thresh_ok) finger_id = 3;
-	else if(ring_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 4 && 
+	else if(ring_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 4 && abs_thresh_4 && 
 		!ref_thresh && syn_thresh_ok) finger_id = 4;
-	else if(little_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 5 && 
+	else if(little_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 5 && abs_thresh_5 && 
 		!ref_thresh && syn_thresh_ok) finger_id = 5;
 	else {
 		if(DEBUG) std::cout << "NO PEAKS ON ANY FINGER. WHAT SHOULD I DO?" << std::endl;
@@ -347,12 +357,13 @@ void checkForCollision(){
 /* Callback for IMU topic subscriber */
 void collisionDetection(const qb_interface::inertialSensorArrayConstPtr& input_sensor_array){
 	// Save current measurements weighting them according to predefined weights and inverse of hand velocity
+	ref_meas = float (REF_WEIGHT) * writeMeasFromArray(*input_sensor_array, ref_imus);
 	thumb_meas = float (THUMB_WEIGHT) * writeMeasFromArray(*input_sensor_array, thumb_imus);
 	index_meas = float (INDEX_WEIGHT) * writeMeasFromArray(*input_sensor_array, index_imus);
 	middle_meas = float (MIDDLE_WEIGHT) * writeMeasFromArray(*input_sensor_array, middle_imus);
 	ring_meas = float (RING_WEIGHT) * writeMeasFromArray(*input_sensor_array, ring_imus);
 	little_meas = float (LITTLE_WEIGHT) * writeMeasFromArray(*input_sensor_array, little_imus);
-	ref_meas = float (REF_WEIGHT) * writeMeasFromArray(*input_sensor_array, ref_imus);
+	
 
 	// Push measurements to the input vectors and increment num_saved_meas if necessary
 	shiftAndInsertMeas();
