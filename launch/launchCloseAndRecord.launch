@@ -5,6 +5,6 @@
   	<node name="close_and_record" pkg="imu_glove_finger_touch_utils" type="close_and_record" output="screen"/>
 
   	<!-- Record the necessary topics -->
-  	<node name="record_bags" pkg="rosbag" type="record" args="/norm_publishing_topic /qb_class_imu/acc"/>
+  	<!-- <node name="record_bags" pkg="rosbag" type="record" args="/norm_publishing_topic /qb_class_imu/acc"/> -->
 
 </launch>
