@@ -31,7 +31,7 @@
 #define NUM_IMUS 		16				// Number of available imus
 
 #define CLOSE_TIME		7000			// Time in which the SoftHand closes totally
-#define N_WP_CLOSE		60 				// Number of trajectory points of the slow hand closing
+#define N_WP_CLOSE		150 			// Number of trajectory points of the slow hand closing
 #define SKIP_TRAJ_DELAY	50              // Delay in ms to avoid "first trajectory before current time" in first hand close
 
 
