@@ -14,7 +14,7 @@ A ROS package with nodes for working with the IMU Glove provided for the PISA II
 This package depends on ROS Indigo or newer and the qb_interface_node package. 
 
 Clone this in you catkin workspace and build:
-INSERT NMMI link here.
+https://github.com/NMMI/IMU
 
 ### Installing
 
@@ -33,3 +33,15 @@ To get the norms of the accelerations of the imus on a topic use the following l
 ```
 roslaunch imu_glove_finger_touch_utils launchNormPublisher.launch
 ```
+
+### Notes on Identification Algorithm
+
+Most of the parameters of the identification algorithm can be changed from the `config_col.yaml` file which is already loaded by the `launchCollisionIdentification` launch file. A short description of each parameter is given in the yaml file itself.
+
+N.B: These parameters are tuned optimally for the Centro Piaggio setup with the KUKA LWR and Ocado version of the PISA/IIT SoftHand. When using it on another setup please tune the params properly.
+
+## Issues with finger touch identification
+
+The algorithm actually identifies the peaks correctly both when the hand is still and is touched by an object on any finger and also while the hand closes if the touch actually creates a peak. 
+
+The problem is that there might not be an actual peak in the accelerometer signals. So, the work for a better identification of touches is still in progress.
