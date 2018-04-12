@@ -45,6 +45,7 @@ double FINGER_TIMEOUT;				// Finger Timeout for resetting finger_id
 float REF_THRESH;					// Minimum absolute treshold on imu acc. for identification
 float ABS_MAX_THRESH;				// Maximum absolute treshold on imu acc. for identification (NOT USED FOR NOW)
 float SYN_POS_THRESH;				// Threshold on synergy after which start detection 
+float SYN_POS_THRESH_2;				// Threshold on synergy after which no detection 
 
 // (NOT USED FOR NOW)
 float SYN_VEL_WEIGHT;				// Weight on inverse of synergy velocity
@@ -94,6 +95,10 @@ bool ref_thresh;
 bool syn_thresh_ok;
 // Bool for checking if all fingers have peaks (NOT USED FOR NOW)
 bool all_fingers_peak;
+
+// Bools for printing id hand is open or closed
+bool first_below = true;
+bool first_above = true;
 
 // INPUT VECTORS
 /* One vector for each finger and each vector has NUM_LAG previous measurements + 1 new measurement */
@@ -178,6 +183,11 @@ bool getParamsOfYaml(){
 	if(!ros::param::get("/finger_collision_identification/SYN_POS_THRESH", SYN_POS_THRESH)){
 		ROS_WARN("SYN_POS_THRESH param not found in param server! Using default.");
 		SYN_POS_THRESH = 0.20;
+		success = false;
+	}
+	if(!ros::param::get("/finger_collision_identification/SYN_POS_THRESH_2", SYN_POS_THRESH_2)){
+		ROS_WARN("SYN_POS_THRESH_2 param not found in param server! Using default.");
+		SYN_POS_THRESH_2 = 0.70;
 		success = false;
 	}
 	if(!ros::param::get("/finger_collision_identification/SYN_VEL_WEIGHT", SYN_VEL_WEIGHT)){
@@ -285,15 +295,30 @@ void getCorrectCollision(){
 	ref_thresh = (ref_meas >= REF_THRESH && ref_output["output_signals"][NUM_LAG] != 0);
 
 	// Check if synergy position is beyond threshold
-	syn_thresh_ok = (synergy_pos >= SYN_POS_THRESH);
+	syn_thresh_ok = (synergy_pos >= SYN_POS_THRESH && synergy_pos <= SYN_POS_THRESH_2);
 
 	// Check collision conditions
-	if(thumb_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 1 && abs_thresh_1 && thumb_meas > REF_THRESH) finger_id = 1;
-	else if(index_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 2 && abs_thresh_2 && index_meas > REF_THRESH) finger_id = 2;
-	else if(middle_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 3 && abs_thresh_3 && middle_meas > REF_THRESH) finger_id = 3;
-	else if(ring_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 4 && abs_thresh_4 && ring_meas > REF_THRESH) finger_id = 4;
-	else if(little_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 5 && abs_thresh_5 && little_meas > REF_THRESH) finger_id = 5;
-	else {
+	if(thumb_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 1 && 
+		abs_thresh_1 && thumb_meas > REF_THRESH && syn_thresh_ok){
+		finger_id = 1;
+		std::cout << "Collision found on finger " << finger_id << " (THUMB)!!!!" << std::endl;
+	}else if(index_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 2 && 
+		abs_thresh_2 && index_meas > REF_THRESH && syn_thresh_ok){
+		finger_id = 2;
+		std::cout << "Collision found on finger " << finger_id << " (INDEX)!!!!" << std::endl;
+	}else if(middle_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 3 && 
+		abs_thresh_3 && middle_meas > REF_THRESH && syn_thresh_ok){
+		finger_id = 3;
+		std::cout << "Collision found on finger " << finger_id << " (MIDDLE)!!!!" << std::endl;
+	}else if(ring_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 4 && 
+		abs_thresh_4 && ring_meas > REF_THRESH && syn_thresh_ok){
+		finger_id = 4;
+		std::cout << "Collision found on finger " << finger_id << " (RING)!!!!" << std::endl;
+	}else if(little_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 5 && 
+		abs_thresh_5 && little_meas > REF_THRESH && syn_thresh_ok){
+		finger_id = 5;
+		std::cout << "Collision found on finger " << finger_id << " (LITTLE)!!!!" << std::endl;
+	}else {
 		if(DEBUG) std::cout << "NO PEAKS ON ANY FINGER. WHAT SHOULD I DO?" << std::endl;
 	}
 
@@ -386,7 +411,7 @@ void collisionDetection(const qb_interface::inertialSensorArrayConstPtr& input_s
 	pub_fing_id.publish(finger_id_msg);
 
 	// Couting the finger in collision
-	std::cout << "The collision finger id is " << finger_id << "!!!!" << std::endl;
+	// std::cout << "The collision finger id is " << finger_id << "!!!!" << std::endl;
 }
 
 /* Callback for SYNERGY topic subscriber */
@@ -396,14 +421,24 @@ void getSyn(const sensor_msgs::JointState& curr_joint_states){
 		curr_joint_states.position[find (curr_joint_states.name.begin(),curr_joint_states.name.end(), 
 			std::string(HAND_JOINT)) - curr_joint_states.name.begin()];
 
+	if(synergy_pos < 0.05 && first_below){
+		std::cout << "------ HAND OPEN ------" << std::endl;
+		first_below = false;
+		first_above = true;
+	} else if(synergy_pos > 0.95 && first_above){
+		std::cout << "------ HAND CLOSED ------" << std::endl;
+		first_above = false;
+		first_below = true;
+	}
+
 	// Get synergy velocity and set it
 	synergy_vel = 
 		curr_joint_states.velocity[find (curr_joint_states.name.begin(),curr_joint_states.name.end(), 
 			std::string(HAND_JOINT)) - curr_joint_states.name.begin()];
 
 	// Saturation of velocity to avoid problems during inversion
-	if (synergy_vel > SYN_VEL_SAT_MAX) synergy_vel = float (SYN_VEL_SAT_MAX);
-  	else if (synergy_vel < SYN_VEL_SAT_MIN) synergy_vel = float (SYN_VEL_SAT_MIN);
+	if(synergy_vel > SYN_VEL_SAT_MAX) synergy_vel = float (SYN_VEL_SAT_MAX);
+  	else if(synergy_vel < SYN_VEL_SAT_MIN) synergy_vel = float (SYN_VEL_SAT_MIN);
 
 	// Couting the synergy values
 	if(DEBUG) std::cout << "The synergy_pos and synergy_vel are (" << synergy_pos << ", " << synergy_vel << ")." << std::endl;
