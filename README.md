@@ -45,3 +45,8 @@ N.B: These parameters are tuned optimally for the Centro Piaggio setup with the 
 The algorithm actually identifies the peaks correctly both when the hand is still and is touched by an object on any finger and also while the hand closes if the touch actually creates a peak. 
 
 The problem is that there might not be an actual peak in the accelerometer signals. So, the work for a better identification of touches is still in progress.
+
+## TODO for later versions
+
+- change the use of arrays for inertial measurements with std::vectors
+- make use of other measurements also for better identification (e.g.: quaternions)
