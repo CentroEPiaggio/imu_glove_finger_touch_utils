@@ -28,6 +28,7 @@ To launch the finger_collision_identification node use the following launch inst
 roslaunch imu_glove_finger_touch_utils launchCollisionIdentification.launch
 ```
 
+The above mentioned launch starts also the `qb_interface_imu` node.
 To get the norms of the accelerations of the imus on a topic use the following launch instruction:
 
 ```
