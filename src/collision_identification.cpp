@@ -45,7 +45,8 @@ double FINGER_TIMEOUT;				// Finger Timeout for resetting finger_id
 float REF_THRESH;					// Minimum absolute treshold on imu acc. for identification
 float ABS_MAX_THRESH;				// Maximum absolute treshold on imu acc. for identification (NOT USED FOR NOW)
 float SYN_POS_THRESH;				// Threshold on synergy after which start detection 
-float SYN_POS_THRESH_2;				// Threshold on synergy after which no detection 
+float SYN_POS_THRESH_2;				// Threshold on synergy after which no detection
+float TIME_BET_COL;					// Time after a collision detection when no other collisions are taken in consideration
 
 // (NOT USED FOR NOW)
 float SYN_VEL_WEIGHT;				// Weight on inverse of synergy velocity
@@ -81,7 +82,11 @@ float synergy_weight = 0.0;									// Weight to be given to inputs according to
 
 std_msgs::Int8 finger_id_msg;								// The message to be published using pub_fing_id
 ros::Time finger_time;										// Time to be set when finger recieves a new collision
+ros::Time interarrival_time_0;								// Time to be set if a collision was found to check interarrival time
 ros::Publisher pub_fing_id;									// Publishes finger_id to OUTPUT_TOPIC 
+
+// Bool for minimum interarrival time
+bool collision_found = false;
 
 // Bools for checking absolute threshold on residuals
 bool abs_thresh_1;
@@ -205,6 +210,11 @@ bool getParamsOfYaml(){
 		SYN_VEL_SAT_MAX = 0.50;
 		success = false;
 	}
+	if(!ros::param::get("/finger_collision_identification/TIME_BET_COL", TIME_BET_COL)){
+		ROS_WARN("TIME_BET_COL param not found in param server! Using default.");
+		TIME_BET_COL = 1.0;
+		success = false;
+	}
 
 	return success;
 }
@@ -297,32 +307,55 @@ void getCorrectCollision(){
 	// Check if synergy position is beyond threshold
 	syn_thresh_ok = (synergy_pos >= SYN_POS_THRESH && synergy_pos <= SYN_POS_THRESH_2);
 
-	// Check collision conditions
+	// Check collision conditions and start measuring time if a collision was found for usage in checkMinimumInterarrivalTime
 	if(thumb_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 1 && 
 		abs_thresh_1 && thumb_meas > REF_THRESH && syn_thresh_ok){
 		finger_id = 1;
+		collision_found = true;
+		interarrival_time_0 = ros::Time::now();
 		std::cout << "Collision found on finger " << finger_id << " (THUMB)!!!!" << std::endl;
 	}else if(index_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 2 && 
 		abs_thresh_2 && index_meas > REF_THRESH && syn_thresh_ok){
 		finger_id = 2;
+		collision_found = true;
+		interarrival_time_0 = ros::Time::now();
 		std::cout << "Collision found on finger " << finger_id << " (INDEX)!!!!" << std::endl;
 	}else if(middle_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 3 && 
 		abs_thresh_3 && middle_meas > REF_THRESH && syn_thresh_ok){
 		finger_id = 3;
+		collision_found = true;
+		interarrival_time_0 = ros::Time::now();
 		std::cout << "Collision found on finger " << finger_id << " (MIDDLE)!!!!" << std::endl;
 	}else if(ring_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 4 && 
 		abs_thresh_4 && ring_meas > REF_THRESH && syn_thresh_ok){
 		finger_id = 4;
+		collision_found = true;
+		interarrival_time_0 = ros::Time::now();
 		std::cout << "Collision found on finger " << finger_id << " (RING)!!!!" << std::endl;
 	}else if(little_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 5 && 
 		abs_thresh_5 && little_meas > REF_THRESH && syn_thresh_ok){
 		finger_id = 5;
+		collision_found = true;
+		interarrival_time_0 = ros::Time::now();
 		std::cout << "Collision found on finger " << finger_id << " (LITTLE)!!!!" << std::endl;
 	}else {
 		if(DEBUG) std::cout << "NO PEAKS ON ANY FINGER. WHAT SHOULD I DO?" << std::endl;
 	}
 
 	if(DEBUG) std::cout << "CORRECT FINGER WAS CHOSEN TO BE " << finger_id << "!!!" << std::endl;
+}
+
+/* If finger_id remains the same for too long, reset it to zero */
+void checkMinimumInterarrivalTime(){
+	if(DEBUG) std::cout << "ENTERED checkMinimumInterarrivalTime FUNCTION!!!!" << std::endl;
+
+	// If time from last touch detection is beyond a threshold let getCorrectCollision run again
+	ros::Duration interarrival_duration(TIME_BET_COL);
+
+	if(ros::Time::now() - interarrival_time_0 > interarrival_duration){
+		collision_found = false;
+		if(DEBUG) std::cout << "Resetting collision_found because time between collisions over!!!!" << std::endl;
+	}
 }
 
 /* If finger_id remains the same for too long, reset it to zero */
@@ -362,8 +395,13 @@ void checkForCollision(){
 
 	if(DEBUG) std::cout << "THUMB OUPUT IS " << thumb_output["output_signals"] << std::endl;
 
+	// Checking if minimum time between successive collisions is respected
+	checkMinimumInterarrivalTime();
+
 	// Checking collision according to current finger in collision
-	getCorrectCollision();
+	if(DEBUG) std::cout << "BOOL collision_found IS " << collision_found << std::endl;
+
+	if(!collision_found) getCorrectCollision();
 
 	if(DEBUG) std::cout << "FINGER IDS SET CORRECTLY!" << std::endl;
 
@@ -421,11 +459,11 @@ void getSyn(const sensor_msgs::JointState& curr_joint_states){
 		curr_joint_states.position[find (curr_joint_states.name.begin(),curr_joint_states.name.end(), 
 			std::string(HAND_JOINT)) - curr_joint_states.name.begin()];
 
-	if(synergy_pos < 0.05 && first_below){
+	if(synergy_pos < SYN_POS_THRESH && first_below){
 		std::cout << "------ HAND OPEN ------" << std::endl;
 		first_below = false;
 		first_above = true;
-	} else if(synergy_pos > 0.95 && first_above){
+	} else if(synergy_pos > SYN_POS_THRESH_2 && first_above){
 		std::cout << "------ HAND CLOSED ------" << std::endl;
 		first_above = false;
 		first_below = true;
@@ -439,6 +477,8 @@ void getSyn(const sensor_msgs::JointState& curr_joint_states){
 	// Saturation of velocity to avoid problems during inversion
 	if(synergy_vel > SYN_VEL_SAT_MAX) synergy_vel = float (SYN_VEL_SAT_MAX);
   	else if(synergy_vel < SYN_VEL_SAT_MIN) synergy_vel = float (SYN_VEL_SAT_MIN);
+
+  	// std::cout << "The synergy_pos is (" << synergy_pos << ")." << std::endl;
 
 	// Couting the synergy values
 	if(DEBUG) std::cout << "The synergy_pos and synergy_vel are (" << synergy_pos << ", " << synergy_vel << ")." << std::endl;
