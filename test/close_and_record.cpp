@@ -30,7 +30,7 @@
 #define DEBUG       	0           	// Prints additional outputs if 1
 #define NUM_IMUS 		16				// Number of available imus
 
-#define CLOSE_TIME		5000			// Time in which the SoftHand closes totally
+#define CLOSE_TIME		7000			// Time in which the SoftHand closes totally
 #define N_WP_CLOSE		150 			// Number of trajectory points of the slow hand closing
 #define SKIP_TRAJ_DELAY	50              // Delay in ms to avoid "first trajectory before current time" in first hand close
 
@@ -71,11 +71,15 @@ control_msgs::FollowJointTrajectoryGoal create_trajectory_goal(double position){
     // Pushing back trajectory points to slow down the hand closing
     int time_increment = floor(CLOSE_TIME / N_WP_CLOSE);
 
+    std::cout << "References given to hand are: " << std::endl;
+
     for(int i = 1; i <= N_WP_CLOSE; i++){
     	double hand_frac = (double (i)) / (double (N_WP_CLOSE));
     	// velocity has to be 0!!!!!!!!!!!!
     	traj.points.push_back(gen_point(position * hand_frac, 0.0, 
     		millisecond * (CLOSE_TIME - (N_WP_CLOSE - i) * time_increment) + nanosecond));
+
+        std::cout << position * hand_frac << std::endl;
     }
 
     control_msgs::FollowJointTrajectoryGoal goal;
@@ -119,13 +123,20 @@ int main(int argc, char** argv){
 	// Closing hand slowly
 	sendHandTrajectory(double (1.0));
 
+    sleep(4);
+
+    // FOR TRYING TO CANCEL GOAL
+    move_->cancelGoal();
+
 	// While closing, record bag file
 	ROS_INFO_STREAM("Starting to record the bag! \n");
 	if(!move_->waitForResult(ros::Duration(20, 0))){
 		std::cout << "The hand is not closing properly!" << std::endl;
 	};
 
-	// Opening hand slowly
+    sleep(5);
+
+	// Opening hand
 	sendHandTrajectory(double (0.0));
 
 	// Success message
