@@ -11,10 +11,11 @@ finger_collision_identification:
   INFLUENCE: 0.5                  # Importance to give to a previous peak in the computation of the mean
   FINGER_TIMEOUT: 5.0             # Finger Timeout for resetting finger_id
   REF_THRESH: 1.05                # Maximum absolute treshold on imu acc. for identification
-  ABS_MAX_THRESH: 0.01            # Maximum absolute treshold on residual for identification (good: 0.5)
-  SYN_POS_THRESH: 0.25            # Threshold on synergy after which start detection (good: 0.2)
-  SYN_POS_THRESH_2: 0.75           # Threshold on synergy after no more detection (good: 0.7)
+  ABS_MAX_THRESH: 0.01            # Maximum absolute treshold on residual for identification (good: 0.01)
+  SYN_POS_THRESH: 0.25            # Threshold on synergy after which start detection (good: 0.25)
+  SYN_POS_THRESH_2: 0.75          # Threshold on synergy after no more detection (good: 0.75)
   SYN_VEL_WEIGHT: 0.500           # Weight on inverse of synergy velocity (inverse of the midpoint of the range (0.02, 0.5) between inverses of max and min vel)
   SYN_VEL_SAT_MIN: 0.02           # Value under which synergy velocity is made saturate
   SYN_VEL_SAT_MAX: 0.50           # Value over which synergy velocity is made saturate
+  TIME_BET_COL: 1.0               # Time after a collision detection when no other collisions are taken in consideration
 
