@@ -30,7 +30,7 @@
 #define DEBUG       	0           	// Prints additional outputs if 1
 #define NUM_IMUS 		16				// Number of available imus
 
-#define CLOSE_TIME		7000			// Time in which the SoftHand closes totally
+#define CLOSE_TIME		4000			// Time in which the SoftHand closes totally
 #define N_WP_CLOSE		150 			// Number of trajectory points of the slow hand closing
 #define SKIP_TRAJ_DELAY	50              // Delay in ms to avoid "first trajectory before current time" in first hand close
 
@@ -123,10 +123,10 @@ int main(int argc, char** argv){
 	// Closing hand slowly
 	sendHandTrajectory(double (1.0));
 
-    sleep(4);
+    // sleep(5);
 
     // FOR TRYING TO CANCEL GOAL
-    move_->cancelGoal();
+    // move_->cancelGoal();
 
 	// While closing, record bag file
 	ROS_INFO_STREAM("Starting to record the bag! \n");
