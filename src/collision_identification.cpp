@@ -39,7 +39,15 @@ std::string HAND_JOINT;
 
 const int NUM_FINGERS = 5;			// Number of fingers of SoftHand
 const int NUM_LAG = 40;				// Width of lag window of z score
-double THRESHOLD;					// If z score is above this threshold a peak is identified
+
+// Different threshold on each finger. If z score for the finger is above its threshold a peak is identified
+double THRESHOLD_1;					// Threshold for thumb z score
+double THRESHOLD_2;					// Threshold for index z score
+double THRESHOLD_3;					// Threshold for middle z score
+double THRESHOLD_4;					// Threshold for ring z score
+double THRESHOLD_5;					// Threshold for little z score
+double THRESHOLD;					// Threshold for reference imu z score
+
 double INFLUENCE;					// Importance to give to a previous peak in the computation of the mean
 double FINGER_TIMEOUT;				// Finger Timeout for resetting finger_id
 float REF_THRESH;					// Minimum absolute treshold on imu acc. for identification
@@ -160,9 +168,34 @@ bool getParamsOfYaml(){
 		HAND_JOINT = "right_hand_synergy_joint";
 		success = false;
 	}
+	if(!ros::param::get("/finger_collision_identification/THRESHOLD_1", THRESHOLD_1)){
+		ROS_WARN("THRESHOLD_1 param not found in param server! Using default.");
+		THRESHOLD_1 = 4.0;
+		success = false;
+	}
+	if(!ros::param::get("/finger_collision_identification/THRESHOLD_2", THRESHOLD_2)){
+		ROS_WARN("THRESHOLD_2 param not found in param server! Using default.");
+		THRESHOLD_2 = 4.0;
+		success = false;
+	}
+	if(!ros::param::get("/finger_collision_identification/THRESHOLD_3", THRESHOLD_3)){
+		ROS_WARN("THRESHOLD_3 param not found in param server! Using default.");
+		THRESHOLD_3 = 4.0;
+		success = false;
+	}
+	if(!ros::param::get("/finger_collision_identification/THRESHOLD_4", THRESHOLD_4)){
+		ROS_WARN("THRESHOLD_4 param not found in param server! Using default.");
+		THRESHOLD_4 = 4.0;
+		success = false;
+	}
+	if(!ros::param::get("/finger_collision_identification/THRESHOLD_5", THRESHOLD_5)){
+		ROS_WARN("THRESHOLD_5 param not found in param server! Using default.");
+		THRESHOLD_5 = 4.0;
+		success = false;
+	}
 	if(!ros::param::get("/finger_collision_identification/THRESHOLD", THRESHOLD)){
 		ROS_WARN("THRESHOLD param not found in param server! Using default.");
-		THRESHOLD = 7.0;
+		THRESHOLD = 4.0;
 		success = false;
 	}
 	if(!ros::param::get("/finger_collision_identification/INFLUENCE", INFLUENCE)){
@@ -301,7 +334,7 @@ void getCorrectCollision(){
 	abs_thresh_4 = ring_output["output_residuals"][NUM_LAG] > ABS_MAX_THRESH;
 	abs_thresh_5 = little_output["output_residuals"][NUM_LAG] > ABS_MAX_THRESH;
 
-	// Check reference imu
+	// Check reference imu (not used for now)
 	ref_thresh = (ref_meas >= REF_THRESH && ref_output["output_signals"][NUM_LAG] != 0);
 
 	// Check if synergy position is beyond threshold
@@ -384,11 +417,11 @@ void resetFingerId(){
 void checkForCollision(){
 	if(DEBUG) std::cout << "THUMB INPUT IS " << thumb_input << std::endl;
 
-	thumb_output = z_score_thresholding(thumb_input, int (NUM_LAG), ld (THRESHOLD), ld (INFLUENCE));
-	index_output = z_score_thresholding(index_input, int (NUM_LAG), ld (THRESHOLD), ld (INFLUENCE));
-	middle_output = z_score_thresholding(middle_input, int (NUM_LAG), ld (THRESHOLD), ld (INFLUENCE));
-	ring_output = z_score_thresholding(ring_input, int (NUM_LAG), ld (THRESHOLD), ld (INFLUENCE));
-	little_output = z_score_thresholding(little_input, int (NUM_LAG), ld (THRESHOLD), ld (INFLUENCE));
+	thumb_output = z_score_thresholding(thumb_input, int (NUM_LAG), ld (THRESHOLD_1), ld (INFLUENCE));
+	index_output = z_score_thresholding(index_input, int (NUM_LAG), ld (THRESHOLD_2), ld (INFLUENCE));
+	middle_output = z_score_thresholding(middle_input, int (NUM_LAG), ld (THRESHOLD_3), ld (INFLUENCE));
+	ring_output = z_score_thresholding(ring_input, int (NUM_LAG), ld (THRESHOLD_4), ld (INFLUENCE));
+	little_output = z_score_thresholding(little_input, int (NUM_LAG), ld (THRESHOLD_5), ld (INFLUENCE));
 	ref_output = z_score_thresholding(ref_input, int (NUM_LAG), ld (THRESHOLD), ld (INFLUENCE));
 
 	if(DEBUG) std::cout << "DONE Z SCORE FOR ALL FINGERS AND REFERENCE!" << std::endl;
