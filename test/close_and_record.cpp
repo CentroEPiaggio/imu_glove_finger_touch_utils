@@ -176,7 +176,11 @@ int main(int argc, char** argv){
     sleep(1);
 
     // Closing hand completely
-    sendHandTrajectory(double (1.0));
+    control_msgs::FollowJointTrajectoryGoal goal_close;
+    goal_close.trajectory.joint_names.push_back(HAND_JOINT);
+    goal_close.trajectory.header.stamp = ros::Time::now() + ros::Duration(0, int (SKIP_TRAJ_DELAY) * 1000000);
+    goal_close.trajectory.points.push_back(gen_point(1.0, 0.0, ros::Duration(0, 1000000)));
+    move_->sendGoal(goal_close);
 
     sleep(3);
 
