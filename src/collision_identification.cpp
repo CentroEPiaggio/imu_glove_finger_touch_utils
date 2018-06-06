@@ -23,6 +23,7 @@
 #include <qb_interface/inertialSensor.h>
 #include <qb_interface/inertialSensorArray.h>
 #include <sensor_msgs/JointState.h>
+#include <geometry_msgs/WrenchStamped.h>
 
 // OTHER INCLUDES
 #include "peak_identification.h"
@@ -34,6 +35,7 @@
 
 std::string INPUT_TOPIC;
 std::string OUTPUT_TOPIC;
+std::string FT_TOPIC;
 std::string SYN_TOPIC;
 std::string HAND_JOINT;
 
@@ -46,6 +48,7 @@ double THRESHOLD_2;					// Threshold for index z score
 double THRESHOLD_3;					// Threshold for middle z score
 double THRESHOLD_4;					// Threshold for ring z score
 double THRESHOLD_5;					// Threshold for little z score
+double THRESHOLD_FT;				// Threshold for force z score
 double THRESHOLD;					// Threshold for reference imu z score
 
 double INFLUENCE;					// Importance to give to a previous peak in the computation of the mean
@@ -68,6 +71,7 @@ float SYN_VEL_SAT_MAX;				// Value over which synergy velocity is made saturate
 #define RING_WEIGHT			1.0		//0.99
 #define LITTLE_WEIGHT		1.0		//0.98
 #define REF_WEIGHT			1.0		//1.00
+#define FT_WEIGHT			1.0		//1.00
 
 // GLOBAL CONSTANTS
 /* Arrays with ids of used sensors of each finger and reference imus */
@@ -87,6 +91,8 @@ int num_saved_meas = 0;										// Number of saved measurements (for all finger
 float synergy_pos = 0.0;									// Current hand synergy position value
 float synergy_vel = 0.0;									// Current hand synergy velocity value
 float synergy_weight = 0.0;									// Weight to be given to inputs according to inverse of synergy velocity
+
+float current_ft = 0.0;										// Current force norm value
 
 std_msgs::Int8 finger_id_msg;								// The message to be published using pub_fing_id
 ros::Time finger_time;										// Time to be set when finger recieves a new collision
@@ -108,6 +114,8 @@ bool ref_thresh;
 bool syn_thresh_ok;
 // Bool for checking if all fingers have peaks (NOT USED FOR NOW)
 bool all_fingers_peak;
+// Bool for checking if all force signal has peak
+bool ft_peak;
 
 // Bools for printing id hand is open or closed
 bool first_below = true;
@@ -121,6 +129,7 @@ std::vector<ld>	middle_input(NUM_LAG + 1);
 std::vector<ld>	ring_input(NUM_LAG + 1);
 std::vector<ld>	little_input(NUM_LAG + 1);
 std::vector<ld>	ref_input(NUM_LAG + 1);
+std::vector<ld>	ft_input(NUM_LAG + 1);
 
 
 // CURRENT MEASUREMENT
@@ -131,6 +140,7 @@ float middle_meas = 0.0;
 float ring_meas = 0.0;
 float little_meas = 0.0;
 float ref_meas = 0.0;
+float ft_meas = 0.0;
 
 // RESULT VARIABLES
 std::unordered_map<std::string, std::vector<ld>> thumb_output;
@@ -139,6 +149,8 @@ std::unordered_map<std::string, std::vector<ld>> middle_output;
 std::unordered_map<std::string, std::vector<ld>> ring_output;
 std::unordered_map<std::string, std::vector<ld>> little_output;
 std::unordered_map<std::string, std::vector<ld>> ref_output;
+std::unordered_map<std::string, std::vector<ld>> ft_output;
+
 
 //-----------------------------------------------------------------------------------------------------------------------//
 // AUXILIARY FUNCTIONS
@@ -156,6 +168,11 @@ bool getParamsOfYaml(){
 	if(!ros::param::get("/finger_collision_identification/OUTPUT_TOPIC", OUTPUT_TOPIC)){
 		ROS_WARN("OUTPUT_TOPIC param not found in param server! Using default.");
 		OUTPUT_TOPIC = "/touching_finger_topic";
+		success = false;
+	}
+	if(!ros::param::get("/finger_collision_identification/FT_TOPIC", FT_TOPIC)){
+		ROS_WARN("FT_TOPIC param not found in param server! Using default.");
+		FT_TOPIC = "/ft_sensor";
 		success = false;
 	}
 	if(!ros::param::get("/finger_collision_identification/SYN_TOPIC", SYN_TOPIC)){
@@ -189,6 +206,11 @@ bool getParamsOfYaml(){
 		success = false;
 	}
 	if(!ros::param::get("/finger_collision_identification/THRESHOLD_5", THRESHOLD_5)){
+		ROS_WARN("THRESHOLD_5 param not found in param server! Using default.");
+		THRESHOLD_5 = 4.0;
+		success = false;
+	}
+	if(!ros::param::get("/finger_collision_identification/THRESHOLD_FT", THRESHOLD_FT)){
 		ROS_WARN("THRESHOLD_5 param not found in param server! Using default.");
 		THRESHOLD_5 = 4.0;
 		success = false;
@@ -303,6 +325,8 @@ void shiftAndInsertMeas(){
 	little_input.back() = ld (little_meas);
 	std::rotate(ref_input.begin(), ref_input.begin() + 1, ref_input.end());
 	ref_input.back() = ld (ref_meas);
+	std::rotate(ft_input.begin(), ft_input.begin() + 1, ft_input.end());
+	ft_input.back() = ld (ft_meas);
 }
 
 /* Choose correct finger considering the following:
@@ -337,36 +361,39 @@ void getCorrectCollision(){
 	// Check reference imu (not used for now)
 	ref_thresh = (ref_meas >= REF_THRESH && ref_output["output_signals"][NUM_LAG] != 0);
 
+	// Check force norm peak
+	ft_peak = ft_output["output_signals"][NUM_LAG] != 0;
+
 	// Check if synergy position is beyond threshold
 	syn_thresh_ok = (synergy_pos >= SYN_POS_THRESH && synergy_pos <= SYN_POS_THRESH_2);
 
 	// Check collision conditions and start measuring time if a collision was found for usage in checkMinimumInterarrivalTime
 	if(thumb_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 1 && 
-		abs_thresh_1 && thumb_meas > REF_THRESH && syn_thresh_ok){
+		abs_thresh_1 && thumb_meas > REF_THRESH && syn_thresh_ok && ft_peak){
 		finger_id = 1;
 		collision_found = true;
 		interarrival_time_0 = ros::Time::now();
 		std::cout << "Collision found on finger " << finger_id << " (THUMB)!!!!" << std::endl;
 	}else if(index_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 2 && 
-		abs_thresh_2 && index_meas > REF_THRESH && syn_thresh_ok){
+		abs_thresh_2 && index_meas > REF_THRESH && syn_thresh_ok && ft_peak){
 		finger_id = 2;
 		collision_found = true;
 		interarrival_time_0 = ros::Time::now();
 		std::cout << "Collision found on finger " << finger_id << " (INDEX)!!!!" << std::endl;
 	}else if(middle_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 3 && 
-		abs_thresh_3 && middle_meas > REF_THRESH && syn_thresh_ok){
+		abs_thresh_3 && middle_meas > REF_THRESH && syn_thresh_ok && ft_peak){
 		finger_id = 3;
 		collision_found = true;
 		interarrival_time_0 = ros::Time::now();
 		std::cout << "Collision found on finger " << finger_id << " (MIDDLE)!!!!" << std::endl;
 	}else if(ring_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 4 && 
-		abs_thresh_4 && ring_meas > REF_THRESH && syn_thresh_ok){
+		abs_thresh_4 && ring_meas > REF_THRESH && syn_thresh_ok && ft_peak){
 		finger_id = 4;
 		collision_found = true;
 		interarrival_time_0 = ros::Time::now();
 		std::cout << "Collision found on finger " << finger_id << " (RING)!!!!" << std::endl;
 	}else if(little_output["output_signals"][NUM_LAG] != 0 && biggest_finger_id == 5 && 
-		abs_thresh_5 && little_meas > REF_THRESH && syn_thresh_ok){
+		abs_thresh_5 && little_meas > REF_THRESH && syn_thresh_ok && ft_peak){
 		finger_id = 5;
 		collision_found = true;
 		interarrival_time_0 = ros::Time::now();
@@ -423,6 +450,7 @@ void checkForCollision(){
 	ring_output = z_score_thresholding(ring_input, int (NUM_LAG), ld (THRESHOLD_4), ld (INFLUENCE));
 	little_output = z_score_thresholding(little_input, int (NUM_LAG), ld (THRESHOLD_5), ld (INFLUENCE));
 	ref_output = z_score_thresholding(ref_input, int (NUM_LAG), ld (THRESHOLD), ld (INFLUENCE));
+	ft_output = z_score_thresholding(ft_input, int (NUM_LAG), ld (THRESHOLD_FT), ld (INFLUENCE));
 
 	if(DEBUG) std::cout << "DONE Z SCORE FOR ALL FINGERS AND REFERENCE!" << std::endl;
 
@@ -462,7 +490,7 @@ void collisionDetection(const qb_interface::inertialSensorArrayConstPtr& input_s
 	middle_meas = float (MIDDLE_WEIGHT) * writeMeasFromArray(*input_sensor_array, middle_imus, size_array_middle);
 	ring_meas = float (RING_WEIGHT) * writeMeasFromArray(*input_sensor_array, ring_imus, size_array_ring);
 	little_meas = float (LITTLE_WEIGHT) * writeMeasFromArray(*input_sensor_array, little_imus, size_array_little);
-	
+	ft_meas = current_ft;
 
 	// Push measurements to the input vectors and increment num_saved_meas if necessary
 	shiftAndInsertMeas();
@@ -517,6 +545,12 @@ void getSyn(const sensor_msgs::JointState& curr_joint_states){
 	if(DEBUG) std::cout << "The synergy_pos and synergy_vel are (" << synergy_pos << ", " << synergy_vel << ")." << std::endl;
 }
 
+/* Callback for FT topic subscriber */
+void getFT(const geometry_msgs::WrenchStamped& curr_ft){
+	// Get synergy position and set it
+	current_ft = sqrt(pow(curr_ft.wrench.force.x, 2) + pow(curr_ft.wrench.force.y, 2) + pow(curr_ft.wrench.force.z, 2));
+}
+
 
 //-----------------------------------------------------------------------------------------------------------------------//
 // MAIN
@@ -530,6 +564,9 @@ int main(int argc, char** argv){
 
 	// Getting params from parameter server
 	if(!getParamsOfYaml()) ROS_WARN("Some params not loaded correctly!");
+
+	// Creating a ROS subscriber to get synergy_joint state
+	ros::Subscriber ft_sub = cd_nh.subscribe(std::string(FT_TOPIC), 10, getFT);
 
 	// Creating a ROS publisher for the output for publishing the finger_id of the finger in collision
 	pub_fing_id = cd_nh.advertise<std_msgs::Int8>(std::string(OUTPUT_TOPIC), 10);
