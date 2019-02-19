@@ -40,6 +40,8 @@ std::string HAND_JOINT;
 const int NUM_FINGERS = 5;			// Number of fingers of SoftHand
 const int NUM_LAG = 40;				// Width of lag window of z score
 
+int NUM_IMUS;						// Number of working IMUs on the glove (DIFFERENT FROM num_imus)
+
 // Different threshold on each finger. If z score for the finger is above its threshold a peak is identified
 double THRESHOLD_1;					// Threshold for thumb z score
 double THRESHOLD_2;					// Threshold for index z score
@@ -71,12 +73,12 @@ float SYN_VEL_SAT_MAX;				// Value over which synergy velocity is made saturate
 
 // GLOBAL CONSTANTS
 /* Arrays with ids of used sensors of each finger and reference imus */
-const int thumb_imus[1] = {14};
-const int index_imus[1] = {11};
-const int middle_imus[1] = {8};
-const int ring_imus[1] = {5};
-const int little_imus[1] = {2};
-const int ref_imus[1] = {15};
+const int thumb_imus[1] = {10};
+const int index_imus[1] = {7};
+const int middle_imus[1] = {13};
+const int ring_imus[1] = {1};
+const int little_imus[1] = {16};
+const int ref_imus[1] = {0};
 
 // GLOBAL VARIABLES
 int finger_id = 0;											// Id of finger in collision (0 if none)
@@ -248,6 +250,11 @@ bool getParamsOfYaml(){
 		TIME_BET_COL = 1.0;
 		success = false;
 	}
+	if(!ros::param::get("/finger_collision_identification/NUM_IMUS", NUM_IMUS)){
+		ROS_FATAL("NUM_IMUS param not found in param server! This might cause serious errors!.");
+		exit (EXIT_FAILURE);
+		success = false;
+	}
 
 	return success;
 }
@@ -276,14 +283,36 @@ float writeMeasFromArray(const qb_interface::inertialSensorArray meas_array, con
 	// or the sum (As we are using only 1 IMU per finger this does not matter)
 	if(!USE_SUM){
 		for(int i = 0; i < num_imus; i++){
-			float curr_norm = getNormFromMeas(meas_array.m[input_imu_array[i]]); 
-			// float curr_norm = getZFromMeas(meas_array.m[input_imu_array[i]]); 
+			// Looping to find the index of the msg with specified id
+			bool found = false;
+			float curr_norm = 0;
+			for(int j = 0; j < NUM_IMUS; j++){
+				if(meas_array.m[j].id == input_imu_array[i]){
+					curr_norm =  getNormFromMeas(meas_array.m[j]);
+					found = true;
+				}
+			}
+			if(!found){
+				ROS_FATAL_STREAM("The specified IMU of id " << input_imu_array[i] << " not found! Plaese double check the ids!");
+				exit (EXIT_FAILURE);
+			}
 			if(curr_norm > norm_result) norm_result = curr_norm;
 		}
 	} else {
 		for(int i = 0; i < num_imus; i++){
 			if(DEBUG) std::cout << "ENTERED FOR WRITE MEAS!!!!!!" << std::endl;
-			norm_result += getNormFromMeas(meas_array.m[input_imu_array[i]]); 
+			// Looping to find the index of the msg with specified id
+			bool found = false;
+			for(int j = 0; j < NUM_IMUS; j++){
+				if(meas_array.m[j].id == input_imu_array[i]){
+					norm_result +=  getNormFromMeas(meas_array.m[j]);
+					found = true;
+				}
+			}
+			if(!found){
+				ROS_FATAL_STREAM("The specified IMU of id " << input_imu_array[i] << " not found! Plaese double check the ids!");
+				exit (EXIT_FAILURE);
+			}
 		}
 	}
 	return norm_result;
