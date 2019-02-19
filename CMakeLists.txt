@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   actionlib_msgs
   actionlib
+  qb_interface
 )
 
 message(STATUS ${catkin_LIBRARIES})
