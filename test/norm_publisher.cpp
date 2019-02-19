@@ -29,6 +29,7 @@
 #define NUM_IMUS 	11				// Number of available imus (UPDATE THIS)!
 
 std::vector<int> ids = {0, 1, 6, 7, 9, 10, 12, 13, 15, 16, 0}; 	// IDs of available imus (UPDATE THIS)!
+// std::vector<int> ids = {0, 1, 6, 9, 10, 12, 13, 15, 16, 0}; 	// IDs of available imus (UPDATE THIS)!
 
 std::string INPUT_TOPIC;
 std::string OUTPUT_TOPIC;
