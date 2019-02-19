@@ -7,6 +7,7 @@ finger_collision_identification:
   SYN_TOPIC: /joint_states                  # Topic from which to get the synergy joint value
   HAND_JOINT: right_hand_synergy_joint      # name of the synergy joint of the hand
 
+  NUM_IMUS: 11                    # Number of working IMUs on the glove
   THRESHOLD_1: 4.0                # If z score for thumb is above this threshold a peak is identified (for OCADO good value 10)
   THRESHOLD_2: 3.5                # If z score for index is above this threshold a peak is identified (for OCADO good value 10)
   THRESHOLD_3: 1.5                # If z score for middle is above this threshold a peak is identified (for OCADO good value 10)

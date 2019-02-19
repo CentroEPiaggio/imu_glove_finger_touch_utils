@@ -7,6 +7,7 @@ finger_collision_identification:
   SYN_TOPIC: /joint_states                  # Topic from which to get the synergy joint value
   HAND_JOINT: right_hand_synergy_joint      # name of the synergy joint of the hand
 
+  NUM_IMUS: 11                    # Number of working IMUs on the glove
   THRESHOLD_1: 4.0                # If z score for thumb is above this threshold a peak is identified (for OCADO good value 10)
   THRESHOLD_2: 3.5                # If z score for index is above this threshold a peak is identified (for OCADO good value 10)
   THRESHOLD_3: 1.0                # If z score for middle is above this threshold a peak is identified (for OCADO good value 10)
@@ -17,7 +18,7 @@ finger_collision_identification:
   FINGER_TIMEOUT: 5.0             # Finger Timeout for resetting finger_id
   REF_THRESH: 1.05                # Maximum absolute treshold on imu acc. for identification
   ABS_MAX_THRESH: 0.01            # Maximum absolute treshold on residual for identification (good: 0.01)
-  SYN_POS_THRESH: 0.25            # Threshold on synergy after which start detection (good: 0.25)
+  SYN_POS_THRESH: 0.00            # Threshold on synergy after which start detection (good: 0.25)
   SYN_POS_THRESH_2: 0.75          # Threshold on synergy after no more detection (good: 0.75)
   SYN_VEL_WEIGHT: 0.500           # Weight on inverse of synergy velocity (inverse of the midpoint of the range (0.02, 0.5) between inverses of max and min vel)
   SYN_VEL_SAT_MIN: 0.02           # Value under which synergy velocity is made saturate
