@@ -26,7 +26,9 @@
 
 // DEFINES
 #define DEBUG       0           	// Prints additional outputs if 1
-#define NUM_IMUS 	16				// Number of available imus
+#define NUM_IMUS 	11				// Number of available imus
+
+std::vector<int> ids = {0, 1, 6, 7, 9, 10, 12, 13, 15, 16, 18};
 
 std::string INPUT_TOPIC;
 std::string OUTPUT_TOPIC;
@@ -79,7 +81,7 @@ void normPublish(const qb_interface::inertialSensorArrayConstPtr& input_sensor_a
 	// Creating the message and filling it up
 	std_msgs::Float64MultiArray pub_msg;
 
-	for(int i = 0; i < NUM_IMUS; i++){
+	for(auto i : ids){
 		current_meas = writeMeasFromArray(*input_sensor_array, i);
 		pub_msg.data.push_back(current_meas);
 	}
