@@ -26,9 +26,9 @@
 
 // DEFINES
 #define DEBUG       0           	// Prints additional outputs if 1
-#define NUM_IMUS 	11				// Number of available imus
+#define NUM_IMUS 	11				// Number of available imus (UPDATE THIS)!
 
-std::vector<int> ids = {0, 1, 6, 7, 9, 10, 12, 13, 15, 16, 18};
+std::vector<int> ids = {0, 1, 6, 7, 9, 10, 12, 13, 15, 16, 0}; 	// IDs of available imus (UPDATE THIS)!
 
 std::string INPUT_TOPIC;
 std::string OUTPUT_TOPIC;
@@ -70,7 +70,14 @@ float getNormFromMeas(const qb_interface::inertialSensor meas){
 /* Gets in input a qb_interface::inertialSensorArray message and writes the of the inertialSensorArray 
 	corresponding to the index specified by input_imu_array */
 float writeMeasFromArray(const qb_interface::inertialSensorArray meas_array, const int input_imu_array){
-	return getNormFromMeas(meas_array.m[input_imu_array]);
+	for(int i = 0; i < NUM_IMUS; i++){
+		if(meas_array.m[i].id == input_imu_array){
+			return getNormFromMeas(meas_array.m[i]);
+		}
+	}
+
+	ROS_FATAL_STREAM("The specified IMU of id " << input_imu_array << " not found! Plaese double check the ids!");
+	exit (EXIT_FAILURE);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------//
