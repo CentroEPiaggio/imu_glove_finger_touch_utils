@@ -73,9 +73,9 @@ float SYN_VEL_SAT_MAX;				// Value over which synergy velocity is made saturate
 
 // GLOBAL CONSTANTS
 /* Arrays with ids of used sensors of each finger and reference imus */
-const int thumb_imus[1] = {10};
-const int index_imus[1] = {7};
-const int middle_imus[1] = {13};
+const int thumb_imus[1] = {7};
+const int index_imus[1] = {13};
+const int middle_imus[1] = {4};
 const int ring_imus[1] = {1};
 const int little_imus[1] = {16};
 const int ref_imus[1] = {0};
