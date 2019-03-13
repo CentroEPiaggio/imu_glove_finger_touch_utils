@@ -5,7 +5,7 @@
 	<arg name="config_col_1" default="$(find imu_glove_finger_touch_utils)/config/config_col_1.yaml"/>
 	<arg name="config_col_2" default="$(find imu_glove_finger_touch_utils)/config/config_col_2.yaml"/>
 
-	<arg name="single_cable" default="true"/>
+	<arg name="single_cable" default="false"/>
 
 	<!-- Loading config file to param server -->
 	<group if="$(arg single_cable)">
