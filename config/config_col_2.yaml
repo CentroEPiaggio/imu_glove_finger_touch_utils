@@ -8,11 +8,11 @@ finger_collision_identification:
   HAND_JOINT: right_hand_synergy_joint      # name of the synergy joint of the hand
 
   NUM_IMUS: 11                    # Number of working IMUs on the glove
-  THRESHOLD_1: 4.0                # If z score for thumb is above this threshold a peak is identified (for OCADO good value 10)
-  THRESHOLD_2: 3.5                # If z score for index is above this threshold a peak is identified (for OCADO good value 10)
-  THRESHOLD_3: 1.5                # If z score for middle is above this threshold a peak is identified (for OCADO good value 10)
-  THRESHOLD_4: 1.0                # If z score for ring is above this threshold a peak is identified (for OCADO good value 10)
-  THRESHOLD_5: 2.0                # If z score for little is above this threshold a peak is identified (for OCADO good value 10)
+  THRESHOLD_1: 0.01               # If z score for thumb is above this threshold a peak is identified (for OCADO good value 10)
+  THRESHOLD_2: 5.0                # If z score for index is above this threshold a peak is identified (for OCADO good value 10)
+  THRESHOLD_3: 5.0                # If z score for middle is above this threshold a peak is identified (for OCADO good value 10)
+  THRESHOLD_4: 5.0                # If z score for ring is above this threshold a peak is identified (for OCADO good value 10)
+  THRESHOLD_5: 5.0                # If z score for little is above this threshold a peak is identified (for OCADO good value 10)
   THRESHOLD: 5.0                  # If z score for ref is above this threshold a peak is identified (for OCADO good value 10)
   INFLUENCE: 0.5                  # Importance to give to a previous peak in the computation of the mean
   FINGER_TIMEOUT: 5.0             # Finger Timeout for resetting finger_id
