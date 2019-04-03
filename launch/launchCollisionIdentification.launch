@@ -16,7 +16,7 @@
 	</group>
 
 	<!-- Load qb_interface_imu launch -->
-	<!-- <include file="$(find qb_interface)/launch/qb_interface_imu.launch"></include> -->
+	<include file="$(find qb_interface)/launch/qb_interface_imu.launch"></include>
 
 	<!-- Load collision identification node -->
   	<node name="finger_collision_identification" pkg="imu_glove_finger_touch_utils" type="finger_collision_identification" output="screen"/>

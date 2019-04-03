@@ -8,15 +8,15 @@ finger_collision_identification:
   HAND_JOINT: right_hand_synergy_joint      # name of the synergy joint of the hand
 
   NUM_IMUS: 11                    # Number of working IMUs on the glove
-  THRESHOLD_1: 5.0                # If z score for thumb is above this threshold a peak is identified (for OCADO good value 10)
-  THRESHOLD_2: 0.01                # If z score for index is above this threshold a peak is identified (for OCADO good value 10)
+  THRESHOLD_1: 10.0                # If z score for thumb is above this threshold a peak is identified (for OCADO good value 10)
+  THRESHOLD_2: 10.0                # If z score for index is above this threshold a peak is identified (for OCADO good value 10)
   THRESHOLD_3: 0.01                # If z score for middle is above this threshold a peak is identified (for OCADO good value 10)
-  THRESHOLD_4: 0.01                # If z score for ring is above this threshold a peak is identified (for OCADO good value 10)
-  THRESHOLD_5: 0.01                # If z score for little is above this threshold a peak is identified (for OCADO good value 10)
-  THRESHOLD: 5.0                  # If z score for ref is above this threshold a peak is identified (for OCADO good value 10)
+  THRESHOLD_4: 10.0                # If z score for ring is above this threshold a peak is identified (for OCADO good value 10)
+  THRESHOLD_5: 10.0                # If z score for little is above this threshold a peak is identified (for OCADO good value 10)
+  THRESHOLD: 0.01                  # If z score for ref is above this threshold a peak is identified (for OCADO good value 10)
   INFLUENCE: 0.5                  # Importance to give to a previous peak in the computation of the mean
   FINGER_TIMEOUT: 5.0             # Finger Timeout for resetting finger_id
-  REF_THRESH: 1.05                # Maximum absolute treshold on imu acc. for identification
+  REF_THRESH: 0.01                # Maximum absolute treshold on imu acc. for identification
   ABS_MAX_THRESH: 0.01            # Maximum absolute treshold on residual for identification (good: 0.01)
   SYN_POS_THRESH: 0.25            # Threshold on synergy after which start detection (good: 0.25)
   SYN_POS_THRESH_2: 0.75          # Threshold on synergy after no more detection (good: 0.75)
